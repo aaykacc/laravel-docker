@@ -1,0 +1,54 @@
+version: '3'
+
+services:
+
+    laravel:
+        build:
+            context: ./data
+            dockerfile: ../containers/php/Dockerfile
+        image: laravel
+        container_name: laravel
+        tty: true
+        working_dir: /var/www
+        volumes:
+            - ./data/:/var/www
+            - ./containers/php/php.ini:/usr/local/etc/php/php.ini
+        networks:
+            - laravel-app
+
+    nginx:
+        image: nginx:alpine
+        container_name: nginx
+        tty: true
+        volumes:
+            - ./data/:/var/www
+            - ./containers/nginx/conf.d/:/etc/nginx/conf.d/
+        ports:
+            - 80:80
+        depends_on:
+            - laravel
+        networks:
+            - laravel-app
+
+    mysql:
+        image: mysql:latest
+        container_name: mysql
+        restart: unless-stopped
+        environment:
+            MYSQL_ROOT_PASSWORD: rootpassword
+            MYSQL_DATABASE: aykacdev
+            MYSQL_USER: aykacdev_user
+            MYSQL_PASSWORD: 571Aksa!632
+        ports:
+            - 3306:3306
+        volumes:
+            - dbdata:/var/lib/mysql
+        networks:
+            - laravel-app
+
+networks:
+    laravel-app:
+        driver: bridge
+
+volumes:
+    dbdata:
