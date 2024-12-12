@@ -1,48 +1,67 @@
-version: '3'
-
 services:
-
-    laravel:
-        build:
-            context: ./data
-            dockerfile: ../containers/php/Dockerfile
-        image: laravel
-        container_name: laravel
-        tty: true
-        working_dir: /var/www
-        volumes:
-            - ./data/:/var/www
-            - ./containers/php/php.ini:/usr/local/etc/php/php.ini
-        networks:
-            - laravel-app
-
     nginx:
-        image: nginx:alpine
-        container_name: nginx
-        tty: true
-        volumes:
-            - ./data/:/var/www
-            - ./containers/nginx/conf.d/:/etc/nginx/conf.d/
+        container_name: ${APP_NAME}_nginx
+        image: nginxproxy/nginx-proxy
+        restart: unless-stopped
         ports:
             - 80:80
+            - 443:443
+        volumes:
+            - /var/run/docker.sock:/tmp/docker.sock:ro
+            - /var/docker/nginx/html:/usr/share/nginx/html
+            - /var/docker/nginx/certs:/etc/nginx/certs
+            - /var/docker/nginx/vhost:/etc/nginx/vhost.d
+            - ./data/:/var/www
+            - ./containers/nginx/conf.d/:/etc/nginx/conf.d/
         depends_on:
-            - laravel
+            - php
         networks:
             - laravel-app
+        logging:
+            options:
+                max-size: "10m"
+                max-file: "3"
+
+    letsencrypt_companion:
+        container_name: ${APP_NAME}_letsencrypt_companion
+        image: jrcs/letsencrypt-nginx-proxy-companion
+        restart: unless-stopped
+        volumes_from:
+            - nginx
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - /var/docker/nginx/acme:/etc/acme.sh
+        environment:
+            DEFAULT_EMAIL: ${APP_MAIL}
 
     mysql:
         image: mysql:latest
-        container_name: mysql
+        container_name: ${APP_NAME}_mysql
         restart: unless-stopped
         environment:
             MYSQL_ROOT_PASSWORD: rootpassword
-            MYSQL_DATABASE: aykacdev
-            MYSQL_USER: aykacdev_user
-            MYSQL_PASSWORD: 571Aksa!632
+            MYSQL_DATABASE: ${MYSQL_DATABASE}
+            MYSQL_USER: ${MYSQL_USER}
+            MYSQL_PASSWORD: ${MYSQL_PASSWORD}
         ports:
             - 3306:3306
         volumes:
             - dbdata:/var/lib/mysql
+        networks:
+            - laravel-app
+
+    php:
+        build:
+            context: ./data
+            dockerfile: ../containers/php/Dockerfile
+        container_name: ${APP_NAME}_php
+        working_dir: /var/www
+        volumes:
+            - ./data/:/var/www
+            - ./containers/php/php.ini:/usr/local/etc/php/php.ini
+        environment:
+            VIRTUAL_HOST: ${APP_HOST}
+            LETSENCRYPT_HOST: ${APP_HOST}
         networks:
             - laravel-app
 
