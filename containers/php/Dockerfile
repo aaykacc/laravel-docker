@@ -43,8 +43,8 @@ RUN docker-php-ext-install \
     pdo_mysql \
     mbstring \
     exif \
-    pcntl \                                                                                                                                                                                                                                                                                                  1,1           Top
-    bcmath \                                                                                                                                                                                                                                                                                                 107,16        Bot
+    pcntl \
+    bcmath \
     gd \
     mysqli \
     pdo \
