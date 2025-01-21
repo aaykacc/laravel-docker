@@ -1,41 +1,20 @@
 services:
     nginx:
         container_name: ${APP_NAME}_nginx
-        image: nginxproxy/nginx-proxy
+        image: nginx
         restart: unless-stopped
         ports:
             - 80:80
-            - 443:443
         volumes:
-            - /var/run/docker.sock:/tmp/docker.sock:ro
-            - /var/docker/nginx/html:/usr/share/nginx/html
-            - /var/docker/nginx/certs:/etc/nginx/certs
-            - /var/docker/nginx/vhost:/etc/nginx/vhost.d
             - ./data/:/var/www
             - ./containers/nginx/conf.d/:/etc/nginx/conf.d/
         depends_on:
             - php
         networks:
-            - laravel-app
-        logging:
-            options:
-                max-size: "10m"
-                max-file: "3"
-
-    letsencrypt_companion:
-        container_name: ${APP_NAME}_letsencrypt_companion
-        image: jrcs/letsencrypt-nginx-proxy-companion
-        restart: unless-stopped
-        volumes_from:
-            - nginx
-        volumes:
-            - /var/run/docker.sock:/var/run/docker.sock
-            - /var/docker/nginx/acme:/etc/acme.sh
-        environment:
-            DEFAULT_EMAIL: ${APP_MAIL}
+            - example-app
 
     mysql:
-        image: mysql:latest
+        image: mysql
         container_name: ${APP_NAME}_mysql
         restart: unless-stopped
         environment:
@@ -48,7 +27,7 @@ services:
         volumes:
             - dbdata:/var/lib/mysql
         networks:
-            - laravel-app
+            - example-app
 
     php:
         build:
@@ -59,14 +38,11 @@ services:
         volumes:
             - ./data/:/var/www
             - ./containers/php/php.ini:/usr/local/etc/php/php.ini
-        environment:
-            VIRTUAL_HOST: ${APP_HOST}
-            LETSENCRYPT_HOST: ${APP_HOST}
         networks:
-            - laravel-app
+            - example-app
 
 networks:
-    laravel-app:
+    example-app:
         driver: bridge
 
 volumes:
